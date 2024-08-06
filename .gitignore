@@ -1,0 +1,2 @@
+# Ignore the trained segmentation model file
+segmentation_model.pth
