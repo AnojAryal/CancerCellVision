@@ -1,2 +1,2 @@
-# Ignore the trained segmentation model file
+# Ignoring trained segmentation model file
 segmentation_model.pth
