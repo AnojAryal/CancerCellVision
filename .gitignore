@@ -1,2 +1,6 @@
 # Ignoring trained segmentation model file
 segmentation_model.pth
+
+#Image folder
+data
+Results
