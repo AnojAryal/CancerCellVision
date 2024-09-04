@@ -1,12 +1,13 @@
+import sys
 import torch
 import segmentation_models_pytorch as smp
 from albumentations.pytorch import ToTensorV2
 import albumentations as A
 from PIL import Image
 import numpy as np
-import matplotlib.pyplot as plt
 import cv2  # OpenCV for color mapping
 from collections import Counter
+import os
 
 # Define and load the model
 model = smp.Unet(
@@ -18,8 +19,9 @@ model = smp.Unet(
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Load model weights with weights_only=True
-model.load_state_dict(torch.load("segmentation_model.pth", map_location=device, weights_only=True))
+# Load model weights
+checkpoint = torch.load("segmentation_model.pth", map_location=device, weights_only=True)
+model.load_state_dict(checkpoint)
 model.to(device)
 model.eval()  # Set the model to evaluation mode
 
@@ -76,36 +78,13 @@ def overlay_mask_on_image(original_image, predicted_mask, alpha=0.5):
 
     return blended_image_pil
 
-def visualize_prediction(image_path, alpha=0.5):
-    """Display the original image and the mask overlay side by side."""
-    predicted_mask, original_image = predict(image_path)
-    overlaid_image = overlay_mask_on_image(original_image, predicted_mask, alpha=alpha)
-    
-    # Convert original image to PIL for consistency
-    original_image_pil = Image.fromarray(original_image)
-    
-    # Display images side by side
-    plt.figure(figsize=(12, 6))
-    
-    plt.subplot(1, 2, 1)
-    plt.imshow(original_image_pil)
-    plt.title("Original Image")
-    plt.axis('off')
-    
-    plt.subplot(1, 2, 2)
-    plt.imshow(overlaid_image)
-    plt.title("Image with Mask Overlay")
-    plt.axis('off')
-    
-    plt.show()
-
 def analyze_mask(predicted_mask):
     """Analyze the mask to find and count detected classes."""
     # Flatten the mask array and count occurrences of each class
     flat_mask = predicted_mask.flatten()
     class_counts = Counter(flat_mask)
     
-    # Print detected classes and their counts
+    # Prepare detected classes and their counts
     detected_classes = {}
     for class_id, count in class_counts.items():
         if class_id < len(class_names):
@@ -113,14 +92,32 @@ def analyze_mask(predicted_mask):
     
     return detected_classes
 
-# Use the script to predict, visualize the result, and analyze detected classes
+def process_images(image_paths):
+    """Process each image and output results."""
+    for image_path in image_paths:
+        predicted_mask, original_image = predict(image_path)
+        
+        # Save the overlaid image
+        result_image_path = os.path.join('Results', os.path.basename(image_path).replace('.jpg', '_overlayed.jpg'))
+        overlaid_image = overlay_mask_on_image(original_image, predicted_mask)
+        overlaid_image.save(result_image_path)
+
+        # Analyze the mask and print results
+        detected_classes = analyze_mask(predicted_mask)
+        result_text = f"{os.path.basename(image_path)}: " + ', '.join([f"{cls}: {count} pixels" for cls, count in detected_classes.items()])
+        print(result_text)
+
 if __name__ == "__main__":
-    image_path = r"data\histology_1.jpg"  # Replace with the actual path to your image
-    visualize_prediction(image_path, alpha=0.5)
+    # Check for image paths from the command line
+    if len(sys.argv) < 2:
+        print("Usage: python detect.py <image_path1,image_path2,...>")
+        sys.exit(1)
+
+    # Get image paths from command line
+    image_paths = sys.argv[1].split(',')
     
-    # Obtain and print detected classes and their counts
-    predicted_mask, _ = predict(image_path)
-    detected_classes = analyze_mask(predicted_mask)
-    print("Detected Classes and Counts:")
-    for class_name, count in detected_classes.items():
-        print(f"{class_name}: {count} pixels")
+    # Create Results folder if not exists
+    os.makedirs('Results', exist_ok=True)
+    
+    # Process images
+    process_images(image_paths)
