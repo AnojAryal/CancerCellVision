@@ -4,3 +4,6 @@ segmentation_model.pth
 #Image folder
 data
 Results
+
+#Dataset
+Datasets
