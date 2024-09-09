@@ -5,8 +5,9 @@ from albumentations.pytorch import ToTensorV2
 import albumentations as A
 from PIL import Image
 import numpy as np
- # OpenCV for color mapping
-import cv2 
+
+# OpenCV for color mapping
+import cv2
 from collections import Counter
 import os
 
@@ -122,9 +123,10 @@ def process_images(image_paths):
     for image_path in image_paths:
         predicted_mask, original_image = predict(image_path)
 
-        # Save the overlaid image
+        # Save the overlaid image to the backend's result images folder
         result_image_path = os.path.join(
-            "Results", os.path.basename(image_path).replace(".jpg", "_overlayed.jpg")
+            "/home/franzy/CancerCellDetection/media/images/result_images/",
+            os.path.basename(image_path).replace(".jpg", "_overlayed.jpg"),
         )
         overlaid_image = overlay_mask_on_image(original_image, predicted_mask)
         overlaid_image.save(result_image_path)
@@ -145,9 +147,6 @@ if __name__ == "__main__":
 
     # Get image paths from command line
     image_paths = sys.argv[1].split(",")
-
-    # Create Results folder if not exists
-    os.makedirs("Results", exist_ok=True)
 
     # Process images
     process_images(image_paths)
