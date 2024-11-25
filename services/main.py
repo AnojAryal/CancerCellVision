@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 
 from services.detector import download_images, process_segmentation
 
+
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -20,6 +22,8 @@ class ImageURLs(BaseModel):
 @app.post("/process_images/")
 async def process_images(request: ImageURLs):
     image_urls = request.urls
+    print("this url")
+    print(image_urls)
 
     try:
         image_paths = download_images(image_urls)

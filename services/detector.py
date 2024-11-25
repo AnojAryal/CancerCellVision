@@ -5,11 +5,13 @@ import tempfile
 from typing import List, Tuple
 import re
 from dotenv import load_dotenv
+import requests
+from requests.exceptions import RequestException
 
 # Load environment variables from .env file
 load_dotenv()
 
-MEDIA_URL = os.getenv("MEDIA_URL")
+RESULT_FOLDER = os.getenv("RESULT_FOLDER")
 VENV_PATH = os.getenv("VENV_PATH")
 TEMP_DIR = os.getenv("TEMP_DIR", tempfile.gettempdir())
 
@@ -20,9 +22,6 @@ logging.basicConfig(
 
 def download_images(image_urls: List[str]) -> List[str]:
     """Download images from URLs and save them in a temporary directory."""
-    import requests
-    import tempfile
-
     os.makedirs(TEMP_DIR, exist_ok=True)
     image_paths = []
 
@@ -31,24 +30,36 @@ def download_images(image_urls: List[str]) -> List[str]:
         image_path = os.path.join(TEMP_DIR, image_name)
 
         try:
-            response = requests.get(url)
+            # Normalize URL and log it
+            url = url.replace("\\", "/")
+            print(f"Downloading image from: {url}")
+
+            # Make the request with a user-agent
+            headers = {"User-Agent": "Mozilla/5.0"}
+            response = requests.get(url, headers=headers, allow_redirects=True)
+
+            # Log response details
+            print(f"Response Status Code: {response.status_code}")
+            print(f"Response Final URL: {response.url}")
+
             response.raise_for_status()
+
+            # Write content to file
             with open(image_path, "wb") as f:
                 f.write(response.content)
             image_paths.append(image_path)
             logging.info(f"Downloaded {url} to {image_path}")
-        except requests.RequestException as e:
+        except RequestException as e:  # Updated to requests.RequestException
             logging.error(f"Failed to download {url}: {e}")
 
     return image_paths
-
 
 def process_segmentation(image_paths: List[str]) -> Tuple[List[str], dict, str]:
     """Run the segmentation model on the images and return processed results."""
     if not VENV_PATH:
         raise EnvironmentError("Virtual environment path (VENV_PATH) is not set")
 
-    python_executable = os.path.join(VENV_PATH, "bin", "python")
+    python_executable = os.path.join(VENV_PATH)
     if not os.path.isfile(python_executable):
         raise FileNotFoundError(f"Python executable not found at {python_executable}")
 
@@ -78,7 +89,8 @@ def process_segmentation(image_paths: List[str]) -> Tuple[List[str], dict, str]:
         raise RuntimeError(f"Unexpected error during segmentation: {str(e)}")
 
     processed_image_urls = [
-        f"{MEDIA_URL}/{os.path.basename(path).replace('.jpg', '_overlayed.jpg')}"
+        f"media/images/result_images/{os.path.basename(path).replace('.jpg', '_overlayed.jpg')}"
+
         for path in image_paths
     ]
 
