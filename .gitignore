@@ -3,7 +3,13 @@ segmentation_model.pth
 
 #Image folder
 data
-Results
+
 
 #Dataset
 Datasets
+
+#pycache
+__pycache__/
+
+#temp
+temp

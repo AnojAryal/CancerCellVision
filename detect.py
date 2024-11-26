@@ -5,8 +5,9 @@ from albumentations.pytorch import ToTensorV2
 import albumentations as A
 from PIL import Image
 import numpy as np
- # OpenCV for color mapping
-import cv2 
+
+# OpenCV for color mapping
+import cv2
 from collections import Counter
 import os
 
@@ -18,7 +19,7 @@ model = smp.Unet(
     classes=6,  # Number of output classes
 )
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0")
 
 # Load model weights
 checkpoint = torch.load(
@@ -116,38 +117,79 @@ def analyze_mask(predicted_mask):
 
     return detected_classes
 
+RESULT_FOLDER = os.getenv("RESULT_FOLDER")
+
+import os
+import sys
+from PIL import Image
+import time
 
 def process_images(image_paths):
     """Process each image and output results."""
+    result_dir = "D:\\CCD\\CancerCellDetector\\media\\images\\result_images"
+
+    # Ensure the result directory exists (only need to check once)
+    if not os.path.exists(result_dir):
+        try:
+            os.makedirs(result_dir)
+            print(f"Directory created at: {result_dir}")
+        except Exception as e:
+            print(f"Error creating directory: {e}")
+            return
+
     for image_path in image_paths:
-        predicted_mask, original_image = predict(image_path)
+        try:
+            # Assuming predict() returns a predicted mask and the original image
+            predicted_mask, original_image = predict(image_path)
 
-        # Save the overlaid image
-        result_image_path = os.path.join(
-            "Results", os.path.basename(image_path).replace(".jpg", "_overlayed.jpg")
-        )
-        overlaid_image = overlay_mask_on_image(original_image, predicted_mask)
-        overlaid_image.save(result_image_path)
+            if predicted_mask is None or original_image is None:
+                print(f"Skipping invalid image: {image_path}")
+                continue
 
-        # Analyze the mask and print results
-        detected_classes = analyze_mask(predicted_mask)
-        result_text = f"{os.path.basename(image_path)}: " + ", ".join(
-            [f"{cls}: {count} pixels" for cls, count in detected_classes.items()]
-        )
-        print(result_text)
+            # Create a unique result image path with a timestamp
+            timestamp = time.strftime("%Y%m%d_%H%M%S")
+            result_image_path = os.path.join(
+                result_dir,
+                f"{os.path.basename(image_path).replace('.jpg', '')}_{timestamp}_overlayed.jpg"
+            )
 
+            # Overlay the mask on the image and save it
+            overlaid_image = overlay_mask_on_image(original_image, predicted_mask)
+
+            # Check if the image is valid before saving
+            if isinstance(overlaid_image, Image.Image):
+                overlaid_image.save(result_image_path)
+                print(f"Saved overlayed image to {result_image_path}")
+            else:
+                print(f"Error: Overlayed image is not valid for {image_path}")
+
+            # Analyze the mask and print results
+            detected_classes = analyze_mask(predicted_mask)
+            result_text = f"{os.path.basename(image_path)}: " + ", ".join(
+                [f"{cls}: {count} pixels" for cls, count in detected_classes.items()]
+            )
+            print(result_text)
+        
+        except Exception as e:
+            print(f"Error processing image {image_path}: {e}")
+
+def parse_args():
+    """Parse command line arguments."""
+    import argparse
+    parser = argparse.ArgumentParser(description="Process and analyze images.")
+    parser.add_argument(
+        'image_paths', 
+        metavar='image_path', 
+        type=str, 
+        
+        nargs='+', 
+        help="Paths to images to process (comma-separated or space-separated)"
+    )
+    return parser.parse_args()
 
 if __name__ == "__main__":
-    # Check for image paths from the command line
-    if len(sys.argv) < 2:
-        print("Usage: python detect.py <image_path1,image_path2,...>")
-        sys.exit(1)
-
-    # Get image paths from command line
-    image_paths = sys.argv[1].split(",")
-
-    # Create Results folder if not exists
-    os.makedirs("Results", exist_ok=True)
-
+    # Parse the image paths from command line
+    args = parse_args()
+    
     # Process images
-    process_images(image_paths)
+    process_images(args.image_paths)
