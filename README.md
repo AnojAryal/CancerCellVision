@@ -18,12 +18,14 @@ CancerCellVision applies computer vision and deep learning techniques to medical
 
 ## 🧪 Technologies Used
 
-- Python 3.x  
-- TensorFlow or PyTorch  
-- OpenCV  
-- FastAPI (for API service)  
-- NumPy, Pandas  
-- Matplotlib, Seaborn  
+- numpy
+- pandas
+- tensorflow
+- scikit-learn
+- pillow
+- fastapi
+- uvicorn
+- matplotlib
 
 ## 📦 Dataset
 
@@ -36,31 +38,40 @@ Instructions for downloading and placing datasets can be found in `data/README.m
 
 Follow these steps to set up and run the project:
 
-```bash
 # Clone the repository
+```bash
 git clone https://github.com/AnojAryal/CancerCellVision && \
 cd CancerCellVision && \
+```
 
 # Create and activate a virtual environment
+```bash
 python3 -m venv venv && \
 source venv/bin/activate && \
+```
 
 # Install dependencies
+```bash
 pip install --upgrade pip && \
 pip install -r requirements.txt && \
+```
+
 
 # Create results directory and a temporary results file
+```bash
 mkdir -p results && \
 touch results/temp_results.txt && \
+```
 
 # Run the main cancer detection script
+```bash
 python run/detecty.py
+```
 
 # (Optional) Run the FastAPI service
-uvicorn services.main:app --reload --port 8001
-
 ```bash
-
+uvicorn services.main:app --reload --port 8001
+```
 
 ## 🤝 Contributing
 
