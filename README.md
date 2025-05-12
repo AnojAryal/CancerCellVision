@@ -59,6 +59,8 @@ python run/detecty.py
 # (Optional) Run the FastAPI service
 uvicorn services.main:app --reload --port 8001
 
+```bash
+
 
 ## 🤝 Contributing
 
